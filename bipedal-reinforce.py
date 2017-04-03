@@ -6,21 +6,15 @@ import gym
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.layers import *
-
 import sys
 
-
-
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('-l', '--load-model', metavar='NPZ',
-                    help='NPZ file containing model weights/biases')
+parser.add_argument('-l', '--load-model', metavar='NPZ', help='NPZ file containing model weights/biases')
 args = parser.parse_args()
-
-
 
 env = gym.make('BipedalWalker-v2')
 
-RNG_SEED=1
+RNG_SEED = 1
 tf.set_random_seed(RNG_SEED)
 env.seed(RNG_SEED)
 
@@ -99,7 +93,7 @@ train_op = optimizer.minimize(-1.0 * Returns * log_pi)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-MEMORY=25
+MEMORY = 25
 MAX_STEPS = env.spec.tags.get('wrapper_config.TimeLimit.max_episode_steps')
 
 track_returns = []
@@ -116,7 +110,7 @@ for ep in range(16384):
     while not done:
         ep_states.append(obs)
         env.render()
-        action = sess.run([pi_sample], feed_dict={x:[obs]})[0][0]
+        action = sess.run([pi_sample], feed_dict={x: [obs]})[0][0]
         ep_actions.append(action)
         obs, reward, done, info = env.step(action)
         ep_rewards.append(reward * I)
@@ -130,23 +124,18 @@ for ep in range(16384):
     if not args.load_model:
         returns = np.array([G - np.cumsum(ep_rewards[:-1])]).T
         index = ep % MEMORY
-        
-        
-        _ = sess.run([train_op],
-                    feed_dict={x:np.array(ep_states),
-                                y:np.array(ep_actions),
-                                Returns:returns })
+
+        _ = sess.run([train_op], feed_dict={x: np.array(ep_states),
+                                            y: np.array(ep_actions),
+                                            Returns: returns})
 
     track_returns.append(G)
     track_returns = track_returns[-MEMORY:]
     mean_return = np.mean(track_returns)
     print("Episode {} finished after {} steps with return {}".format(ep, t, G))
-    print("Mean return over the last {} episodes is {}".format(MEMORY,
-                                                               mean_return))
-
+    print("Mean return over the last {} episodes is {}".format(MEMORY, mean_return))
 
     with tf.variable_scope("mus", reuse=True):
-        print("incoming weights for the mu's from the first hidden unit:", sess.run(tf.get_variable("weights"))[0,:])
-
+        print("incoming weights for the mu's from the first hidden unit:", sess.run(tf.get_variable("weights"))[0, :])
 
 sess.close()
